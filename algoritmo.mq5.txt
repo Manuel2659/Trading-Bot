@@ -1,0 +1,202 @@
+// Declaramos las librerías necesarias
+#include <Trade\PositionInfo.mqh>
+#include <Trade\Trade.mqh>
+#include <Indicators\Indicators.mqh>
+
+// Definimos las variables necesarias
+input double LotSize = 0.1;
+input int FastMA_Period = 9;
+input int SlowMA_Period = 500;
+input ENUM_MA_METHOD MA_Method = MODE_EMA;
+input int RSI_Period = 14;
+input double RSI_Overbought_Level = 80;
+input double RSI_Oversold_Level = 20;
+input int ATR_Period = 14;
+input int ADX_Period = 14;
+
+// Función onCalculate
+void OnCalculate(const int rates_total,
+                 const int prev_calculated,
+                 const datetime &time[],
+                 const double &open[],
+                 const double &high[],
+                 const double &low[],
+                 const double &close[],
+                 const long &tick_volume[],
+                 const long &volume[],
+                 const int &spread[])
+{
+    // Declaramos las variables necesarias para los indicadores
+    double fast_ma[];
+    double slow_ma[];
+    double rsi[];
+    double atr[];
+    double adx[];
+    int positions = PositionsTotal();
+
+    // Calculamos los valores de los indicadores
+    ArraySetAsSeries(fast_ma, true);
+    ArraySetAsSeries(slow_ma, true);
+    ArraySetAsSeries(rsi, true);
+    ArraySetAsSeries(atr, true);
+    ArraySetAsSeries(adx, true);
+    if (iMA(NULL, 0, FastMA_Period, 0, MA_Method, PRICE_CLOSE, 0) == 0 ||
+        iMA(NULL, 0, SlowMA_Period, 0, MA_Method, PRICE_CLOSE, 0) == 0 ||
+        iRSI(NULL, 0, RSI_Period, PRICE_CLOSE, 0) == 0 ||
+        iATR(NULL, 0, ATR_Period, 0) == 0 ||
+        iADX(NULL, 0, ADX_Period, 0) == 0)
+    {
+        return;
+    }
+    CopyBuffer(iMA(NULL, 0, FastMA_Period, 0, MA_Method, PRICE_CLOSE, 0), 0, 0, rates_total, fast_ma);
+    CopyBuffer(iMA(NULL, 0, SlowMA_Period, 0, MA_Method, PRICE_CLOSE, 0), 0, 0, rates_total, slow_ma);
+    CopyBuffer(iRSI(NULL, 0, RSI_Period, PRICE_CLOSE, 0), 0, 0, rates_total, rsi);
+    CopyBuffer(iATR(NULL, 0, ATR_Period, 0), 0, 0, rates_total, atr);
+    CopyBuffer(iADX(NULL, 0, ADX_Period, 0), 0, 0, rates_total, adx);
+
+    // Identificamos la tendencia clara con el precio por encima o por debajo de la EMA de 500 períodos
+    bool uptrend = close[rates_total - 1] > slow_ma[rates_total - 1];
+    bool downtrend = close[rates_total - 1] < slow_ma[rates_total - 1];
+
+    // Verificamos que la línea del RSI indique una situación de sobreventa o sobrecompra
+    bool oversold = rsi[rates_total - 1] < RSI_Oversold_Level;
+    bool overbought = rsi[rates_total - 1] > RSI_Overbought_Level;
+
+    // Identificamos si se cumplen las condiciones para abrir una posición en largo
+    if (uptrend && oversold)
+{
+    // Esperamos a que aparezca una vela verde para asegurarnos de que el precio no continuará descendiendo
+    if (close[rates_total - 1] > open[rates_total - 1])
+    {
+        // Esperamos a que el precio atraviese la EMA de 9 períodos
+        if (close[rates_total - 1] > fast_ma[rates_total - 1] && close[rates_total - 2] < fast_ma[rates_total - 2])
+        {
+            // Colocamos la orden de compra
+            double stop_loss = low[rates_total - 2] - atr[rates_total - 2];
+            double take_profit = close[rates_total - 1] + 2 * (close[rates_total - 1] - stop_loss);
+            if (positions == 0)
+            {
+                if (OrderSend(_Symbol, OP_BUY, LotSize, Ask, slippage, stop_loss, take_profit, "Buy Order", MagicNumber, 0, Green))
+                {
+                    Print("Buy Order sent successfully.");
+                }
+                else
+                {
+                    Print("Error sending buy order. Error code: ", GetLastError());
+                }
+            }
+        }
+    }
+}
+
+// Identificamos si se cumplen las condiciones para abrir una posición en corto
+if (downtrend && overbought)
+{
+    // Esperamos a que aparezca una vela roja para asegurarnos de que el precio no continuará ascendiendo
+    if (close[rates_total - 1] < open[rates_total - 1])
+    {
+        // Esperamos a que el precio atraviese la EMA de 9 períodos
+        if (close[rates_total - 1] < fast_ma[rates_total - 1] && close[rates_total - 2] > fast_ma[rates_total - 2])
+        {
+            // Colocamos la orden de venta
+            double stop_loss = high[rates_total - 2] + atr[rates_total - 2];
+            double take_profit = close[rates_total - 1] - 2 * (stop_loss - close[rates_total - 1]);
+            if (positions == 0)
+            {
+                if (OrderSend(_Symbol, OP_SELL, LotSize, Bid, slippage, stop_loss, take_profit, "Sell Order", MagicNumber, 0, Red))
+                {
+                    Print("Sell Order sent successfully.");
+                }
+                else
+                {
+                    Print("Error sending sell order. Error code: ", GetLastError());
+                }
+            }
+        }
+    }
+}
+
+// Verificamos si el precio alcanza el nivel de sobrecompra o sobreventa y cerramos la posición si es necesario
+if (positions > 0)
+{
+    // Verificamos si la posición es de compra
+    if (PositionSelect(_Symbol) && PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY)
+    {
+        // Cerramos la posición si el precio alcanza el nivel de sobrecompra
+        if (rsi[rates_total - 1] >= RSI_Overbought_Level)
+        {
+            if (OrderClose(PositionGetTicket(), LotSize, Bid, slippage, Green))
+            {
+                Print("Buy position closed successfully.");
+            }
+            else
+            {
+                Print("Error closing buy position. Error code: ", GetLastError());
+            }
+        }
+        // Cerramos la posición si se alcanza el take-profit
+        else if (OrderTakeProfit() <= Bid - (2 * (Ask - OrderStopLoss())))
+        {
+            if (OrderClose(PositionGetTicket(), LotSize, Bid, slippage, Green))
+            {
+                Print("Buy position closed successfully.");
+            }
+            else
+            {
+                Print("Error closing buy position. Error code: ", GetLastError());
+            }
+        }
+        // Cerramos la posición si se alcanza el stop-loss
+        else if (OrderStopLoss() >= Bid + atr[rates_total - 2])
+        {
+            if (OrderClose(PositionGetTicket(), LotSize, Bid, slippage, Red))
+            {
+                Print("Buy position closed successfully.");
+            }
+            else
+            {
+                Print("Error closing buy position. Error code: ", GetLastError());
+            }
+        }
+    }
+    // Verificamos si la posición es de venta
+    else if (PositionSelect(_Symbol) && PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_SELL)
+    {
+        // Cerramos la posición si el precio alcanza el nivel de sobreventa
+        if (rsi[rates_total - 1] <= RSI_Oversold_Level)
+        {
+            if (OrderClose(PositionGetTicket(), LotSize, Ask, slippage, Red))
+            {
+                Print("Sell position closed successfully.");
+            }
+            else
+            {
+                Print("Error closing sell position. Error code: ", GetLastError());
+            }
+        }
+        // Cerramos la posición si se alcanza el take-profit
+        else if (OrderTakeProfit() >= Ask + (2 * (OrderStopLoss() - Bid)))
+        {
+            if (OrderClose(PositionGetTicket(), LotSize, Ask, slippage, Red))
+            {
+                Print("Sell position closed successfully.");
+            }
+            else
+            {
+                Print("Error closing sell position. Error code: ", GetLastError());
+            }
+        }
+        // Cerramos la posición si se alcanza el stop-loss
+        else if (OrderStopLoss() <= Ask - atr[rates_total - 2])
+        {
+            if (OrderClose(PositionGetTicket(), LotSize, Ask, slippage, Green))
+            {
+                Print("Sell position closed successfully.");
+            }
+            else
+            {
+                Print("Error closing sell position. Error code: ", GetLastError());
+            }
+        }
+    }
+}
