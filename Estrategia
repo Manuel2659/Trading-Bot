@@ -1,0 +1,20 @@
+Descripción del algoritmo
+Este algoritmo está diseñado para operar en el mercado de divisas (Forex) y utiliza una combinación de indicadores técnicos para identificar oportunidades de trading en el mercado. En particular, utiliza los siguientes indicadores:
+
+Media móvil exponencial (EMA) de 9 períodos y 500 períodos
+Índice de Fuerza Relativa (RSI) de 14 períodos
+Rango Medio Verdadero (ATR) de 14 períodos
+Índice de Movimiento Direccional Promedio (ADX) de 14 períodos
+El algoritmo se ejecuta en el marco de tiempo de 1 hora (H1) y utiliza una combinación de estos indicadores para identificar tendencias y niveles de sobrecompra/sobreventa en el mercado. Cuando se cumplen ciertas condiciones, el algoritmo abre posiciones largas o cortas en el mercado.
+
+En particular, el algoritmo busca identificar las siguientes situaciones:
+
+Una tendencia alcista clara, identificada cuando el precio está por encima de la EMA de 500 períodos.
+Una situación de sobreventa, identificada cuando el RSI cae por debajo del nivel de 20.
+Una tendencia bajista clara, identificada cuando el precio está por debajo de la EMA de 500 períodos.
+Una situación de sobrecompra, identificada cuando el RSI sube por encima del nivel de 80.
+Cuando se identifica una tendencia alcista y una situación de sobreventa, el algoritmo espera a que el precio supere la EMA de 9 períodos antes de abrir una posición larga. Si se identifica una tendencia bajista y una situación de sobrecompra, el algoritmo espera a que el precio caiga por debajo de la EMA de 9 períodos antes de abrir una posición corta.
+
+El algoritmo también incluye medidas de protección para limitar las pérdidas en caso de que el mercado se mueva en contra de la posición abierta. En particular, establece niveles de stop-loss y take-profit basados en el rango medio verdadero del mercado (ATR).
+
+Este algoritmo es una implementación básica de una estrategia de trading y puede ser modificado y mejorado para adaptarse a diferentes mercados y marcos de tiempo. Se recomienda realizar pruebas exhaustivas y utilizar la gestión adecuada del riesgo al utilizar cualquier estrategia de trading automatizada.
