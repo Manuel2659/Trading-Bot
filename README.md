@@ -9,16 +9,13 @@ Para utilizar esta estrategia, necesitarás tener MetaTrader 5 instalado en tu c
 
 Instrucciones
 Abre MetaTrader 5 y carga la estrategia en la plataforma.
-Selecciona el instrumento financiero en el que deseas operar.
-Ajusta los parámetros de la estrategia según tu preferencia.
-Ejecuta la estrategia y espera a que se abran las posiciones.
-Aviso Legal
-Esta estrategia de trading es solo para fines educativos y no es una recomendación de inversión. Utiliza esta estrategia bajo tu propio riesgo y responsabilidad. No nos hacemos responsables de cualquier pérdida financiera que pueda ocurrir como resultado de utilizar esta estrategia.
+Diseñado para operar con  Bitcoin.
+Ajusta los parámetros de la estrategia según tu preferenci.
 
+
+
+Aviso Legal
+Esta estrategia de trading es principalmente experimental y no es una recomendación de inversión. Utiliza esta estrategia bajo tu propio riesgo y responsabilidad. No nos hacemos responsables de cualquier pérdida financiera que pueda ocurrir como resultado de utilizar esta estrategia.
 
 Contribuyendo
 Si deseas contribuir a este proyecto, por favor envía un pull request. Agradecemos todas las contribuciones y sugerencias para mejorar esta estrategia de trading.
-
-
-
-
